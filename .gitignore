@@ -1,0 +1,28 @@
+# Xcode build artifacts
+DerivedData/
+build/
+*.xcarchive
+
+# Xcode user state (per-developer, not shared)
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# SwiftPM resolved file (regenerated on build)
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# macOS
+.DS_Store
+
+# Fastlane (if added later)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Env / secrets (never commit)
+.env
+Secrets.xcconfig
+*.p12
+*.mobileprovision
+AuthKey_*.p8
