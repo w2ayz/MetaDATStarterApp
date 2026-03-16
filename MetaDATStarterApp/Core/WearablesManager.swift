@@ -10,22 +10,31 @@ final class WearablesManager: ObservableObject {
     @Published var hasActiveDevice: Bool = false
     @Published var error: Error?
 
+    private var observingTasks: [Task<Void, Never>] = []
+
     private init() {}
 
     func startObserving() {
-        Task {
-            for await state in Wearables.shared.registrationStateStream() {
-                registrationState = state
-                // Clear error on successful state transitions
-                if state == .registered { error = nil }
+        guard observingTasks.isEmpty else { return }  // prevent double-start
+        observingTasks = [
+            Task {
+                for await state in Wearables.shared.registrationStateStream() {
+                    registrationState = state
+                    if state == .registered { error = nil }
+                }
+            },
+            Task {
+                for await list in Wearables.shared.devicesStream() {
+                    devices = list
+                    hasActiveDevice = !list.isEmpty
+                }
             }
-        }
-        Task {
-            for await list in Wearables.shared.devicesStream() {
-                devices = list
-                hasActiveDevice = !list.isEmpty
-            }
-        }
+        ]
+    }
+
+    func stopObserving() {
+        observingTasks.forEach { $0.cancel() }
+        observingTasks = []
     }
 
     func handleUrl(_ url: URL) {

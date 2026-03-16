@@ -14,7 +14,8 @@ struct StreamView: View {
                 Divider()
                 controlBar
                     .padding(.horizontal)
-                    .padding(.vertical, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 36)
             }
             .navigationTitle("Camera")
             .navigationBarTitleDisplayMode(.inline)
@@ -118,15 +119,24 @@ struct StreamView: View {
             Text(error.friendlyMessage)
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                .fixedSize(horizontal: false, vertical: true)
             if error == .permissionDenied {
                 Button("Grant Camera Access") {
                     stream.requestCameraPermission()
                 }
                 .buttonStyle(.borderedProminent)
                 .padding(.top, 4)
+            } else {
+                Button("Dismiss") {
+                    stream.streamError = nil
+                }
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.6))
+                .padding(.top, 4)
             }
         }
+        .padding(.horizontal, 32)
+        .frame(maxWidth: 300)
         .foregroundStyle(.white.opacity(0.85))
     }
 
@@ -190,27 +200,28 @@ struct StreamView: View {
         }
     }
 
+    @ViewBuilder
     private var streamToggleButton: some View {
-        Group {
-            if stream.isActive {
-                Button(role: .destructive) {
-                    stream.stop()
-                } label: {
-                    Label("Stop", systemImage: "stop.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
-            } else {
-                Button {
-                    stream.start()
-                } label: {
-                    Label("Start Stream", systemImage: "play.circle.fill")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!wearables.hasActiveDevice)
+        if stream.isActive {
+            Button(role: .destructive) {
+                stream.stop()
+            } label: {
+                Label("Stop", systemImage: "stop.circle.fill")
+                    .font(.subheadline.weight(.semibold))
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .tint(.red)
+        } else {
+            Button {
+                stream.start()
+            } label: {
+                Label("Start Stream", systemImage: "play.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+            .disabled(!wearables.hasActiveDevice)
         }
     }
 

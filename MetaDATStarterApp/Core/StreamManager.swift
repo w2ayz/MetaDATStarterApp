@@ -90,9 +90,11 @@ final class StreamManager: ObservableObject {
                 case .starting, .waitingForDevice:
                     // Arm timeout only on first entry to starting; waitingForDevice extends the same window
                     if self.startTimeoutTask == nil {
-                        self.startTimeoutTask = Task {
-                            try? await Task.sleep(for: .seconds(10))
-                            guard !Task.isCancelled else { return }
+                        self.startTimeoutTask = Task { @MainActor [weak self] in
+                            try? await Task.sleep(for: .seconds(30))
+                            guard !Task.isCancelled, let self else { return }
+                            // Guard against double-stop: only act if still in a pre-streaming state
+                            guard self.streamState == .starting || self.streamState == .waitingForDevice else { return }
                             streamLogger.error("[\(self.ts())] start timeout — no streaming after 10s, stopping")
                             self.streamError = .timeout
                             self.stop()
@@ -140,6 +142,8 @@ final class StreamManager: ObservableObject {
     }
 
     func stop() {
+        guard session != nil else { return }  // prevent double-stop
+
         startTimeoutTask?.cancel()
         startTimeoutTask = nil
 

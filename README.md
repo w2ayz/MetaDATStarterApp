@@ -181,6 +181,16 @@ xcodebuild \
 
 ## Changelog
 
+### v1.0.2
+- **Fixed button layout (iOS 26)** — Start Stream / Stop buttons no longer bleed past the leading edge. Replaced `Group { if/else }` with `@ViewBuilder` and `.controlSize(.regular)` for correct sizing on iOS 26's updated button rendering.
+- **Control bar spacing** — Increased bottom padding (12 → 36pt) to clear the floating tab bar on iOS 18+.
+- **Error overlay** — Error messages no longer hyphenate mid-word. Added a **Dismiss** button so the error can be cleared without starting a new stream.
+- **Timeout extended** — Connection timeout increased from 10s to 30s to allow more time for glasses to connect.
+- **Double-stop guard** — `StreamManager.stop()` is now a no-op if the session is already nil, preventing race conditions when the SDK and app both trigger a stop simultaneously.
+- **Task lifecycle** — `WearablesManager` now stores observer task handles in `observingTasks`; `guard observingTasks.isEmpty` prevents double-start; `stopObserving()` provides a clean cancellation path.
+- **Timeout threading** — Start timeout Task is now `@MainActor`-isolated with a state guard, eliminating the threading violation identified in the QC review.
+- **Future-proof errors** — Added `@unknown default` to `StreamSessionError+UI.swift` so new SDK error cases compile cleanly.
+
 ### v1.0.1
 - **Inline permission request** — DAT camera permission is now requested automatically on first stream start instead of failing early. The app opens Meta AI inline if permission has not yet been granted, matching the Meta sample flow.
 - **Device gating** — Start Stream button is disabled until at least one device appears in `devicesStream()`. The preview pane shows "No glasses connected" when no device is present, so the button state is always self-explanatory.
