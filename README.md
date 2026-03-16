@@ -179,6 +179,19 @@ xcodebuild \
 
 ---
 
+## Changelog
+
+### v1.0.1
+- **Inline permission request** — DAT camera permission is now requested automatically on first stream start instead of failing early. The app opens Meta AI inline if permission has not yet been granted, matching the Meta sample flow.
+- **Device gating** — Start Stream button is disabled until at least one device appears in `devicesStream()`. The preview pane shows "No glasses connected" when no device is present, so the button state is always self-explanatory.
+- **Start timeout** — If the stream does not reach `.streaming` within 10 seconds of entering `.starting` / `.waitingForDevice`, the session is stopped automatically and an actionable error is shown: *"No active glasses detected. Make sure they're on, unfolded, and in range, then try again."*
+- **Timestamped state logs** — Every stream state transition is logged with a `HH:mm:ss.SSS` timestamp (e.g. `[12:24:05.123] stream state → starting`), making the full startup sequence visible in a single Xcode console run.
+
+### v1.0.0
+Initial release — device registration, live camera stream, photo capture, video recording, mock device support.
+
+---
+
 ## Links
 
 - [Meta Wearables DAT SDK — iOS API Reference](https://wearables.developer.meta.com/docs/reference/ios_swift/dat/0.5)
