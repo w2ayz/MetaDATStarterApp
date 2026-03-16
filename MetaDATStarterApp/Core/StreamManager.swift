@@ -29,6 +29,14 @@ final class StreamManager: ObservableObject {
     private var frameToken: Any?
     private var photoToken: Any?
     private var errorToken: Any?
+    private var startTimeoutTask: Task<Void, Never>?
+
+    private static let tsFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        return f
+    }()
+    private func ts() -> String { Self.tsFormatter.string(from: Date()) }
 
     private let recorder = VideoRecorder()
     private let ciContext = CIContext()
@@ -47,17 +55,21 @@ final class StreamManager: ObservableObject {
     }
 
     private func startChecked() async {
-        // Check DAT camera permission — separate from iOS camera permission, lives in Meta AI
+        // Check DAT camera permission — request inline if not yet granted (matches Meta sample flow).
         do {
-            let status = try await Wearables.shared.checkPermissionStatus(.camera)
+            var status = try await Wearables.shared.checkPermissionStatus(.camera)
+            if status != .granted {
+                streamLogger.info("DAT camera permission not granted (\(String(describing: status))) — requesting…")
+                status = try await Wearables.shared.requestPermission(.camera)
+            }
             if status == .denied {
-                streamLogger.error("DAT camera permission denied — user must grant in Meta AI")
+                streamLogger.error("DAT camera permission denied after request")
                 streamError = .permissionDenied
                 return
             }
             streamLogger.info("DAT camera permission: \(String(describing: status))")
         } catch {
-            streamLogger.error("checkPermissionStatus threw: \(error.localizedDescription)")
+            streamLogger.error("Permission check/request threw: \(error.localizedDescription)")
             // Non-fatal: proceed and let errorPublisher surface the problem
         }
 
@@ -69,8 +81,33 @@ final class StreamManager: ObservableObject {
         self.session = session
 
         stateToken = session.statePublisher.listen { [weak self] state in
-            streamLogger.info("Stream state → \(String(describing: state))")
-            Task { @MainActor in self?.streamState = state }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                streamLogger.info("[\(self.ts())] stream state → \(String(describing: state))")
+                self.streamState = state
+
+                switch state {
+                case .starting, .waitingForDevice:
+                    // Arm timeout only on first entry to starting; waitingForDevice extends the same window
+                    if self.startTimeoutTask == nil {
+                        self.startTimeoutTask = Task {
+                            try? await Task.sleep(for: .seconds(10))
+                            guard !Task.isCancelled else { return }
+                            streamLogger.error("[\(self.ts())] start timeout — no streaming after 10s, stopping")
+                            self.streamError = .timeout
+                            self.stop()
+                        }
+                    }
+                case .streaming:
+                    self.startTimeoutTask?.cancel()
+                    self.startTimeoutTask = nil
+                case .stopped, .stopping:
+                    self.startTimeoutTask?.cancel()
+                    self.startTimeoutTask = nil
+                default:
+                    break
+                }
+            }
         }
         frameToken = session.videoFramePublisher.listen { [weak self] frame in
             guard let self else { return }
@@ -103,6 +140,9 @@ final class StreamManager: ObservableObject {
     }
 
     func stop() {
+        startTimeoutTask?.cancel()
+        startTimeoutTask = nil
+
         stopRecording()
         currentFrame = nil
 

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct StreamView: View {
     @EnvironmentObject private var stream: StreamManager
+    @EnvironmentObject private var wearables: WearablesManager
     @State private var showFullPhoto = false
     @State private var toastTask: Task<Void, Never>?
 
@@ -103,7 +104,7 @@ struct StreamView: View {
         VStack(spacing: 10) {
             Image(systemName: "eyeglasses")
                 .font(.system(size: 48))
-            Text(stateLabel)
+            Text(wearables.hasActiveDevice ? stateLabel : "No glasses connected")
                 .font(.subheadline)
         }
         .foregroundStyle(.white.opacity(0.5))
@@ -208,6 +209,7 @@ struct StreamView: View {
                         .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!wearables.hasActiveDevice)
             }
         }
     }

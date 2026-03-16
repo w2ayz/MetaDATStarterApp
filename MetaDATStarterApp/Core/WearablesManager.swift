@@ -7,6 +7,7 @@ final class WearablesManager: ObservableObject {
 
     @Published var registrationState: RegistrationState = .unavailable
     @Published var devices: [DeviceIdentifier] = []
+    @Published var hasActiveDevice: Bool = false
     @Published var error: Error?
 
     private init() {}
@@ -22,6 +23,7 @@ final class WearablesManager: ObservableObject {
         Task {
             for await list in Wearables.shared.devicesStream() {
                 devices = list
+                hasActiveDevice = !list.isEmpty
             }
         }
     }

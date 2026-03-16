@@ -12,7 +12,7 @@ extension StreamSessionError {
         case .hingesClosed:
             return "Glasses are folded.\nOpen them to start the stream."
         case .timeout:
-            return "Connection timed out.\nTry starting the stream again."
+            return "No active glasses detected.\nMake sure they're on, unfolded, and in range, then try again."
         case .thermalCritical:
             return "Device too hot.\nLet it cool down before streaming."
         case .videoStreamingError:
